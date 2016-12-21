@@ -121,7 +121,7 @@ index.post('/add', function(req, res) {
                     rating = 5;
                 }
 
-
+                
                 var album = new Album({
                     title: title,
                     discogsId: discogsID,
