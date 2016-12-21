@@ -48,8 +48,14 @@ index.get('/', function(req, res, next) {
 
 
 index.post('/add-album', function(req, res){
-    console.log(req.body.albumID);
+
     var albumId = mongoose.Types.ObjectId.createFromHexString(req.body.albumID);
+    var rating;
+    if(!isNaN(+req.body.rating)){
+        rating = +req.body.rating;
+    } else {
+        rating = 5;
+    }
     Album.findById(albumId, function(err, album) {
         if(!err) {
             var isInPlaylist = function(element) {
@@ -57,7 +63,7 @@ index.post('/add-album', function(req, res){
             }
 
             if (req.body.playlist && !req.user.playlist.find(isInPlaylist)) {
-                req.user.playlist.push({rating: 5, album: album._id});
+                req.user.playlist.push({rating: rating, album: album._id});
 
             }
             if (req.body.wishlist && req.user.wishlist.indexOf(album._id) < 0) {
@@ -107,8 +113,13 @@ index.post('/add', function(req, res) {
             var thumbnail = data.thumb;
             var genres = data.genres;
             var released = data.released;
+            var rating;
+            if(!isNaN(+req.body.rating)){
+                rating = +req.body.rating;
+            } else {
+                rating = 5;
+            }
 
-            var rating = +req.body.rating;
 
             var album = new Album({
                 title: title,
