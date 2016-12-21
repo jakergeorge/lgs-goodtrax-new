@@ -1,3 +1,36 @@
+<div class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="javascript:void(0)">GoodTracks</a>
+        </div>
+        <div class="navbar-collapse collapse navbar-responsive-collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="/">Home</a> </li>
+                <li><a href="/playlist">Playlist</a></li>
+                <li><a href="/wishlist">Wish List</a></li>
+                <li><a href="/listento">Listen To</a></li>
+                <li><a href="/add">Add Album</a></li>
+            </ul>
+            <form method="post" action="/search" class="navbar-form navbar-left">
+                <div class="form-group">
+                    <input type="text" name="searchQuery" class="form-control col-md-8" placeholder="Search">
+                </div>
+            </form>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/logout">Log Out</a></li>
+            </ul>
+
+        </div>
+    </div>
+</div>
+
 <h1>{{message}}</h1>
+{{#if error}}
 <h2>{{error.status}}</h2>
 <pre>{{error.stack}}</pre>
+{{/if}}

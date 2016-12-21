@@ -51,21 +51,33 @@ index.post('/add-album', function(req, res){
     console.log(req.body.albumID);
     var albumId = mongoose.Types.ObjectId.createFromHexString(req.body.albumID);
     Album.findById(albumId, function(err, album) {
-        if(req.body.playlist) {
-            req.user.playlist.push({rating: 5, album: album._id});
+        if(!err) {
+            var isInPlaylist = function(element) {
+                return element.album.toHexString() === album.id;
+            }
 
-        }
-        if(req.body.wishlist) {
-            req.user.wishlist.push(album._id);
-        }
-        if(req.body.listeningTo) {
-            req.user.listeningTo.push(album._id);
-        }
+            if (req.body.playlist && !req.user.playlist.find(isInPlaylist)) {
+                req.user.playlist.push({rating: 5, album: album._id});
 
-        req.user.save(function(err, savedUser, count) {
-            console.log(savedUser);
-            res.redirect('/');
-        });
+            }
+            if (req.body.wishlist && req.user.wishlist.indexOf(album._id) < 0) {
+                req.user.wishlist.push(album._id);
+            }
+            if (req.body.listeningTo && req.user.listeningTo.indexOf(album._id) < 0) {
+                req.user.listeningTo.push(album._id);
+            }
+
+            req.user.save(function (err, savedUser) {
+                if(!err) {
+                    console.log(savedUser);
+                    res.redirect('/');
+                } else {
+                    res.render('error', {message: "Error: could not save the album to your list"});
+                }
+            });
+        } else {
+            res.render('error', {message: "Error: could not retrieve the selected album from the database"});
+        }
     });
 });
 
@@ -109,40 +121,104 @@ index.post('/add', function(req, res) {
             });
 
             album.save(function(err, savedAlbum) {
-                console.log(savedAlbum);
-                if(req.body.playlist) {
-                    req.user.playlist.push({rating: rating, album:savedAlbum._id});
+                if(!err) {
+                    if (req.body.playlist) {
+                        req.user.playlist.push({rating: rating, album: savedAlbum._id});
 
-                }
-                if(req.body.wishlist) {
-                    req.user.wishlist.push(savedAlbum._id);
-                }
-                if(req.body.listeningTo) {
-                    req.user.listeningTo.push(savedAlbum._id);
-                }
+                    }
+                    if (req.body.wishlist) {
+                        req.user.wishlist.push(savedAlbum._id);
+                    }
+                    if (req.body.listeningTo) {
+                        req.user.listeningTo.push(savedAlbum._id);
+                    }
 
-                req.user.save(function(err, savedUser, count) {
-                    console.log(savedUser);
-                    res.redirect('/');
-                });
+                    req.user.save(function (err, savedUser, count) {
+                        if(!err) {
+                            res.redirect('/');
+                        } else {
+                            res.render('error', {message: "Error: the album could not be saved to your list"});
+                        }
+                    });
+                } else {
+                    res.render('error', {message: "Error: the album could not be saved to the database"});
+                }
             });
 
 
         });
 });
 
+index.post('/delete-album', function(req, res) {
+   if(req.user) {
+       var id = req.body.albumID;
+       console.log(id);
+       var index;
+       if(req.body.listType === "playlist") {
+
+           for (var i = req.user.playlist.length - 1; i >= 0; i--) {
+               if (req.user.playlist[i].album.toHexString() === id) {
+                   req.user.playlist.splice(i, 1);
+               }
+           }
+            req.user.save(function(err) {
+               if(!err){
+                   res.redirect('/playlist');
+               } else {
+                   res.render('error', {message: "Error: there was an error deleting the album from your playlist"});
+               }
+            });
+       } else if(req.body.listType === "wishlist") {
+           for (var j = req.user.wishlist.length - 1; j >= 0; j--) {
+               if (req.user.wishlist[j].toHexString() === id) {
+                   req.user.wishlist.splice(j, 1);
+               }
+           }
+           req.user.save(function(err) {
+               if(!err){
+                   res.redirect('/wishlist');
+               } else {
+                   res.render('error', {message: "Error: there was an error deleting the album from your wishlist"});
+               }
+           });
+       } else if(req.body.listType === "listenTo") {
+           for (var k = req.user.listeningTo.length - 1; k >= 0; k--) {
+               if (req.user.listeningTo[k].toHexString() === id) {
+                   req.user.listeningTo.splice(k, 1);
+               }
+           }
+           req.user.save(function(err) {
+               if(!err){
+                   res.redirect('/listento');
+               } else {
+                   res.render("error", {message: "Error: there was an error deleting the album from your listening to list"});
+               }
+           });
+       } else {
+           res.render('error', {message: "Error: invalid delete request"});
+       }
+   } else {
+       res.redirect('/login');
+   }
+});
+
 index.get('/wishlist', function(req, res) {
     if(req.user){
-        var albums = [];
         if(req.user.wishlist.length > 0) {
-            req.user.wishlist.forEach(function (el) {
-                Album.findById(el, function (err, found) {
-                    albums.push(found);
 
-                    if (albums.length === req.user.wishlist.length) {
+            Album.find({
+                "_id" : { $in: req.user.wishlist}
+            }, function(err, albums) {
+                if(!err){
+                    console.log(req.user.wishlist);
+                    if(albums.length === req.user.wishlist.length) {
                         res.render('wishlist', {albums: albums});
+                    } else {
+                        res.render('wishlist', {albums: albums, message: "Error: could not retrieve all of the albums in your wishlist"});
                     }
-                });
+                } else{
+                    res.render('wishlist', {message: "Error: there was an error retrieving the albums in your wishlist"} )
+                }
             });
         } else {
             res.render('wishlist');
@@ -156,13 +232,18 @@ index.get('/wishlist', function(req, res) {
 index.get('/playlist', function(req, res) {
     if(req.user){
         var albums = [];
+        var message;
         if(req.user.playlist.length > 0) {
             req.user.playlist.forEach(function (el) {
                 Album.findById(el.album, function (err, found) {
-                    albums.push({rating: el.rating, album: found});
+                    if(!err) {
+                        albums.push({rating: el.rating, album: found});
 
-                    if (albums.length === req.user.playlist.length) {
-                        res.render('playlist', {albums: albums});
+                        if (albums.length === req.user.playlist.length) {
+                            res.render('playlist', {albums: albums});
+                        }
+                    } else {
+                        res.render('playlist', {message: "Error: There was an error retrieving the albums in your playlist"});
                     }
                 });
             });
@@ -177,16 +258,21 @@ index.get('/playlist', function(req, res) {
 
 index.get('/listento', function(req, res) {
     if(req.user){
-        var albums = [];
-        if(req.user.listeningTo.length > 0) {
-            req.user.listeningTo.forEach(function (el) {
-                Album.findById(el, function (err, found) {
-                    albums.push(found);
 
-                    if (albums.length === req.user.listeningTo.length) {
+        if(req.user.listeningTo.length > 0) {
+            Album.find({
+                "_id" : { $in: req.user.listeningTo}
+            }, function(err, albums) {
+                if(!err){
+                    console.log(req.user.listeningTo);
+                    if(albums.length === req.user.listeningTo.length) {
                         res.render('listeningto', {albums: albums});
+                    } else {
+                        res.render('listeningto', {albums: albums, message: "Error: could not retrieve all of the albums in your listening to list"});
                     }
-                });
+                } else{
+                    res.render('listeningto', {message: "Error: there was an error retrieving the albums in your listening to list"} )
+                }
             });
         }
         else {
@@ -221,6 +307,10 @@ index.post('/login', function(req,res,next) {
 
 });
 
+index.get('/logout', function(req, res){
+    req.logout();
+    res.redirect('/login');
+});
 /*REGISTRATION LOGIC*/
 
 index.get('/register', function(req, res) {
