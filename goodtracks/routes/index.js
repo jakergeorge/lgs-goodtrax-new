@@ -98,65 +98,68 @@ index.get('/add', function(req, res) {
 
 index.post('/add', function(req, res) {
         db.getRelease(req.body.discogsID, function(err, data) {
-            console.log(data);
-            var title = data.title;
-            var tracks = [];
-            data.tracklist.forEach(function(el){
-               tracks.push(el.title);
-            });
+            if(!err) {
+                console.log(data);
+                var title = data.title;
+                var tracks = [];
+                data.tracklist.forEach(function (el) {
+                    tracks.push(el.title);
+                });
 
-            var discogsID = data.id;
-            var artists = [];
-            data.artists.forEach(function(el) {
-                artists.push(el.name);
-            });
-            var thumbnail = data.thumb;
-            var genres = data.genres;
-            var released = data.released;
-            var rating;
-            if(!isNaN(+req.body.rating)){
-                rating = +req.body.rating;
-            } else {
-                rating = 5;
-            }
-
-
-            var album = new Album({
-                title: title,
-                discogsId: discogsID,
-                artists: artists,
-                thumbnail: thumbnail,
-                songs: tracks,
-                releaseDate: released,
-                genres: genres
-            });
-
-            album.save(function(err, savedAlbum) {
-                if(!err) {
-                    if (req.body.playlist) {
-                        req.user.playlist.push({rating: rating, album: savedAlbum._id});
-
-                    }
-                    if (req.body.wishlist) {
-                        req.user.wishlist.push(savedAlbum._id);
-                    }
-                    if (req.body.listeningTo) {
-                        req.user.listeningTo.push(savedAlbum._id);
-                    }
-
-                    req.user.save(function (err, savedUser, count) {
-                        if(!err) {
-                            res.redirect('/');
-                        } else {
-                            res.render('error', {message: "Error: the album could not be saved to your list"});
-                        }
-                    });
+                var discogsID = data.id;
+                var artists = [];
+                data.artists.forEach(function (el) {
+                    artists.push(el.name);
+                });
+                var thumbnail = data.thumb;
+                var genres = data.genres;
+                var released = data.released;
+                var rating;
+                if (!isNaN(+req.body.rating)) {
+                    rating = +req.body.rating;
                 } else {
-                    res.render('error', {message: "Error: the album could not be saved to the database"});
+                    rating = 5;
                 }
-            });
 
 
+                var album = new Album({
+                    title: title,
+                    discogsId: discogsID,
+                    artists: artists,
+                    thumbnail: thumbnail,
+                    songs: tracks,
+                    releaseDate: released,
+                    genres: genres
+                });
+
+                album.save(function (err, savedAlbum) {
+                    if (!err) {
+                        if (req.body.playlist) {
+                            req.user.playlist.push({rating: rating, album: savedAlbum._id});
+
+                        }
+                        if (req.body.wishlist) {
+                            req.user.wishlist.push(savedAlbum._id);
+                        }
+                        if (req.body.listeningTo) {
+                            req.user.listeningTo.push(savedAlbum._id);
+                        }
+
+                        req.user.save(function (err, savedUser, count) {
+                            if (!err) {
+                                res.redirect('/');
+                            } else {
+                                res.render('error', {message: "Error: the album could not be saved to your list"});
+                            }
+                        });
+                    } else {
+                        res.render('error', {message: "Error: the album could not be saved to the database"});
+                    }
+                });
+
+            } else {
+                res.render('error', {message: "Error: could not retrieve album info from discogs"})
+            }
         });
 });
 

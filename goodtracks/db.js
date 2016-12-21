@@ -11,10 +11,6 @@ var User = new mongoose.Schema({
     }],
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Album'}],
     listeningTo: [{type: mongoose.Schema.Types.ObjectId, ref: 'Album'}]
-    /*
-    
-       Playlist, wishlist, listening to
-     */
 });
 
 
@@ -35,7 +31,7 @@ User.plugin(passportLocalMongoose);
 mongoose.model('User', User);
 mongoose.model('Album', Album);
 
-/* Ensure index for search functionality*/
 
-/*Change to correct db config*/
+
+
 mongoose.connect("mongodb://localhost:27017/largescalez", {mongos: true});
